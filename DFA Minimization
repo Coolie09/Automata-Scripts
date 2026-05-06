@@ -1,0 +1,112 @@
+// DEA Verkleinerungsprogramm
+
+let automat = {
+    q0: {"a": "q1", "b": "q5"},
+    q1: {"a": "q6", "b": "q4"},
+    q2: {"a": "q0", "b": "q2"},
+    q3: {"a": "q2", "b": "q6"},
+    q4: {"a": "q7", "b": "q5"},
+    q5: {"a": "q2", "b": "q6"},
+    q6: {"a": "q6", "b": "q4"},
+    q7: {"a": "q6", "b": "q2"}
+};
+
+let safe = {};
+
+let eingabeAlphabet = "ab".split("");
+
+
+let endzustaende = ["q2", "q4"];
+
+function getGroup(zustand) {
+    for (let i in safe) {
+        if (safe[i].includes(zustand)) return i;
+    }
+    return null;
+}
+
+function createGroups() {
+    let end = [];
+    let notEnd = [];
+
+    for (let i in automat) {
+        if (endzustaende.includes(i)) {
+            end.push(i);
+        } else {
+            notEnd.push(i);
+        }
+    }
+
+    safe = {};
+
+    if (notEnd.length > 0) safe["N"] = notEnd;
+    if (end.length > 0) safe["E"] = end;
+}
+
+createGroups();
+
+function checkChanges() {
+    let newSafe = {};
+    let changes = false;
+
+    for (let i in safe) {
+        for (let x of safe[i]) {
+            let str = "";
+
+            for (let h of eingabeAlphabet) {
+                str += getGroup(automat[x][h]) + "|";
+            }
+
+            let key = i + ":" + str;
+
+            if (newSafe[key]) {
+                newSafe[key].push(x.toString());
+            } else {
+                newSafe[key] = [x.toString()];
+            }
+        }
+    }
+
+    if (Object.keys(newSafe).length !== Object.keys(safe).length) {
+        changes = true;
+    }
+
+    return {newSafe, changes};
+}
+
+let result = checkChanges();
+
+while (result.changes) {
+    safe = result.newSafe;
+    result = checkChanges();
+}
+
+function createNewAutomat() {
+    let newAutomat = {};
+
+    function groupName(gruppe) {
+        return "{" + gruppe.join(",") + "}";
+    }
+
+    for (let i in safe) {
+        let gruppe = safe[i];
+        let name = groupName(gruppe);
+
+        newAutomat[name] = {};
+
+        let vertreter = gruppe[0];
+
+        for (let h of eingabeAlphabet) {
+            let zielzustand = automat[vertreter][h];
+            let zielgruppeKey = getGroup(zielzustand);
+            let zielgruppe = safe[zielgruppeKey];
+
+            newAutomat[name][h] = groupName(zielgruppe);
+        }
+    }
+
+    return newAutomat;
+}
+
+let neu = createNewAutomat();
+console.log(neu);
