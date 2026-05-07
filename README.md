@@ -1,4 +1,25 @@
-# DEA-Verkleinerungsprogramm
+# Skripts zur Automatentheorie
+
+In diesem Repository werden verschiedene Skripts zum Thema **Automatentheorie** gesammelt.
+
+Die Skripts behandeln unterschiedliche Themen, zum Beispiel deterministische endliche Automaten, Minimierung, Übergangstabellen, Hashing von Automatenstrukturen und weitere Verfahren aus der theoretischen Informatik.
+
+Diese README dient als Übersicht.  
+Über die folgende Liste kommt man direkt zu den Beschreibungen der einzelnen Programme.
+
+---
+
+## Übersicht der Programme
+
+> Die Programmnamen können hier später eingetragen oder angepasst werden.
+
+- [DEA-Verkleinerungsprogramm](#dea-verkleinerungsprogramm)
+- [Beweis der Eindeutigkeit der Minimierung](#Beweis-der-Eindeutigkeit-der-Minimierung)
+
+---
+
+## DEA-Verkleinerungsprogramm
+
 
 Dieses Skript minimiert einen deterministischen endlichen Automaten (DEA).
 
@@ -8,7 +29,7 @@ Am Ende wird aus dem minimierten Automaten zusätzlich eine kompakte Zeichenkett
 
 ---
 
-## Grundidee
+### Grundidee
 
 Ein DEA besteht aus:
 
@@ -26,7 +47,7 @@ Solche Zustände können zusammengefasst werden, ohne dass sich die erkannte Spr
 
 ---
 
-## Eingabe des Automaten
+### Eingabe des Automaten
 
 Der Automat wird direkt im Code als JavaScript-Objekt definiert:
 
@@ -47,7 +68,7 @@ Der Automat hat also eine Schleife auf sich selbst für beide Zeichen.
 
 ---
 
-## Eingabealphabet
+### Eingabealphabet
 
 Das Alphabet steht in dieser Zeile:
 
@@ -75,7 +96,7 @@ Dann müsste aber auch jeder Zustand Übergänge für `a`, `b` und `c` besitzen.
 
 ---
 
-## Startzustand und Endzustände
+### Startzustand und Endzustände
 
 Der Startzustand wird hier festgelegt:
 
@@ -106,7 +127,7 @@ babba
 
 ---
 
-## Die Variable `safe`
+### Die Variable `safe`
 
 Die Variable `safe` speichert die aktuellen Gruppen von Zuständen:
 
@@ -125,7 +146,7 @@ Danach werden diese Gruppen immer weiter aufgeteilt, falls sich Zustände innerh
 
 ---
 
-## Funktion `getGroup(zustand)`
+### Funktion `getGroup(zustand)`
 
 ```js
 function getGroup(zustand) {
@@ -160,7 +181,7 @@ Die Funktion wird später gebraucht, um zu vergleichen, ob Zustände bei gleiche
 
 ---
 
-## Funktion `createGroups()`
+### Funktion `createGroups()`
 
 ```js
 function createGroups() {
@@ -200,7 +221,7 @@ Ein Endzustand akzeptiert das bisher gelesene Wort. Ein Nicht-Endzustand tut das
 
 ---
 
-## Funktion `checkChanges()`
+### Funktion `checkChanges()`
 
 Diese Funktion ist der wichtigste Teil der Minimierung.
 
@@ -261,7 +282,7 @@ Zustände mit unterschiedlichem Schlüssel werden getrennt.
 
 ---
 
-## Wiederholung der Aufteilung
+### Wiederholung der Aufteilung
 
 Nach dem ersten Prüfen wird die Aufteilung so lange wiederholt, bis sich nichts mehr ändert:
 
@@ -282,7 +303,7 @@ Dann enthält `safe` die endgültigen Gruppen der gleichwertigen Zustände.
 
 ---
 
-## Funktion `createNewAutomat()`
+### Funktion `createNewAutomat()`
 
 Nachdem die endgültigen Gruppen gefunden wurden, wird daraus ein neuer Automat gebaut.
 
@@ -333,7 +354,7 @@ Das funktioniert, weil alle Zustände in derselben Gruppe gleichwertig sind. Sie
 
 ---
 
-## Funktion `createHashTable()`
+### Funktion `createHashTable()`
 
 Diese Funktion baut aus dem minimierten Automaten eine kompakte Textdarstellung.
 
@@ -361,7 +382,7 @@ Für den Beispielautomaten entsteht genau so eine Struktur, weil der einzige Zus
 
 ---
 
-## Ausgaben des Programms
+### Ausgaben des Programms
 
 Die Funktion gibt drei Dinge in der Konsole aus:
 
@@ -376,7 +397,7 @@ console.log("HashTable:");
 console.log(table);
 ```
 
-### 1. Minimierter Automat
+#### 1. Minimierter Automat
 
 Hier sieht man den neu erzeugten Automaten nach der Minimierung.
 
@@ -391,7 +412,7 @@ Beim Beispiel bleibt nur ein Zustand übrig:
 }
 ```
 
-### 2. Decode-Tabelle
+#### 2. Decode-Tabelle
 
 Die Decode-Tabelle zeigt, welche Zustandsgruppe welche Nummer bekommen hat.
 
@@ -403,7 +424,7 @@ Beispiel:
 }
 ```
 
-### 3. HashTable
+#### 3. HashTable
 
 Die HashTable ist die kompakte Textform des Automaten.
 
@@ -415,7 +436,7 @@ Beim Beispiel:
 
 ---
 
-## Funktion `simpleHash(str)`
+### Funktion `simpleHash(str)`
 
 Zum Schluss wird die erzeugte HashTable gehasht:
 
@@ -453,7 +474,7 @@ Diese Zahl kann man als einfachen Fingerabdruck des minimierten Automaten sehen.
 
 ---
 
-## Ablauf des Programms
+### Ablauf des Programms
 
 Der Ablauf ist insgesamt:
 
@@ -467,7 +488,7 @@ Der Ablauf ist insgesamt:
 
 ---
 
-## Beispiel mit dem vorhandenen Automaten
+### Beispiel mit dem vorhandenen Automaten
 
 Der eingebaute Automat ist:
 
@@ -521,14 +542,12 @@ Das heißt:
 
 Wenn einer dieser Punkte fehlt, kann das Programm falsche Ergebnisse liefern oder abbrechen.
 
+---
 
 
+## Beweis der Eindeutigkeit der Minimierung
 
-
-
-# Eindeutigkeit minimaler DEAs
-
-## Aussage
+### Aussage
 
 Zu jeder regulären Sprache gibt es genau einen minimalen deterministischen endlichen Automaten, wenn man von der Benennung der Zustände absieht.
 
@@ -542,7 +561,7 @@ Man sagt auch:
 
 ---
 
-## Was bedeutet „bis auf Isomorphie“?
+### Was bedeutet „bis auf Isomorphie“?
 
 Zwei Automaten sind isomorph, wenn sie zwar unterschiedlich aussehen können, aber dieselbe Struktur haben.
 
@@ -564,7 +583,7 @@ Es geht also nicht um die Namen der Zustände, sondern um den Aufbau des Automat
 
 ---
 
-## Warum ist der minimale DEA eindeutig?
+### Warum ist der minimale DEA eindeutig?
 
 Ein Zustand in einem DEA beschreibt im Grunde, welche Möglichkeiten nach dem bisher gelesenen Wort noch offen sind.
 
@@ -590,7 +609,7 @@ Dann sind `u` und `v` für die Sprache nicht unterscheidbar.
 
 ---
 
-## Die Rolle der Myhill-Nerode-Klassen
+### Die Rolle der Myhill-Nerode-Klassen
 
 Diese Gruppen von nicht unterscheidbaren Wörtern nennt man Myhill-Nerode-Klassen.
 
@@ -604,7 +623,7 @@ Deshalb ist die Anzahl der Zustände nicht zufällig. Sie wird allein durch die 
 
 ---
 
-## Beweisidee
+### Beweisidee
 
 Angenommen, es gibt zwei minimale DEAs `A` und `B`, die dieselbe Sprache `L` erkennen.
 
@@ -642,7 +661,7 @@ Diese Zuordnung sagt:
 
 ---
 
-## Warum ist diese Zuordnung eindeutig?
+### Warum ist diese Zuordnung eindeutig?
 
 Ein Zustand kann durch verschiedene Wörter erreicht werden.
 
@@ -671,11 +690,11 @@ Damit ist die Zuordnung `f` wohldefiniert.
 
 ---
 
-## Was bleibt erhalten?
+### Was bleibt erhalten?
 
 Die Abbildung `f` erhält die Struktur des Automaten.
 
-### Startzustand
+#### Startzustand
 
 Das leere Wort führt in beiden Automaten zum Startzustand.
 
@@ -685,7 +704,7 @@ Daher wird der Startzustand von `A` auf den Startzustand von `B` abgebildet.
 f(q0) = p0
 ```
 
-### Endzustände
+#### Endzustände
 
 Ein Zustand ist akzeptierend, wenn ein Wort, das dorthin führt, zur Sprache gehört.
 
@@ -705,7 +724,7 @@ Also führt `x` in `B` ebenfalls zu einem akzeptierenden Zustand.
 
 Damit werden akzeptierende Zustände auf akzeptierende Zustände abgebildet.
 
-### Übergänge
+#### Übergänge
 
 Wenn in `A` ein Übergang
 
@@ -727,7 +746,7 @@ Die Übergänge bleiben also erhalten.
 
 ---
 
-## Ergebnis
+### Ergebnis
 
 Die Abbildung `f` ordnet jedem Zustand von `A` genau einen passenden Zustand von `B` zu.
 
@@ -741,14 +760,8 @@ Damit sind die beiden Automaten isomorph.
 
 ---
 
-## Fazit
+## Ziel des Repositories
 
-Ein minimaler DEA ist durch die erkannte Sprache vollständig festgelegt.
+Das Repository soll nach und nach eine Sammlung von Programmen zur Automatentheorie werden.
 
-Unterschiede können nur noch in der Benennung der Zustände liegen.
-
-Deshalb gilt:
-
-```text
-Zwei minimale DEAs, die dieselbe Sprache erkennen, sind isomorph.
-```
+Dabei geht es nicht nur darum, fertige Skripts abzulegen, sondern auch darum, die Ideen dahinter verständlich zu dokumentieren.
