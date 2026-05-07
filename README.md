@@ -1,3 +1,531 @@
+# DEA-Verkleinerungsprogramm
+
+Dieses Skript minimiert einen deterministischen endlichen Automaten (DEA).
+
+Die Idee ist, Zustände zusammenzufassen, die sich für die erkannte Sprache gleich verhalten. Wenn zwei Zustände bei allen Eingaben immer in gleichartige Zustandsgruppen führen und beide entweder Endzustände oder Nicht-Endzustände sind, können sie zusammengelegt werden.
+
+Am Ende wird aus dem minimierten Automaten zusätzlich eine kompakte Zeichenkette erzeugt. Diese Zeichenkette wird anschließend mit einer einfachen Hash-Funktion in eine Zahl umgerechnet.
+
+---
+
+## Grundidee
+
+Ein DEA besteht aus:
+
+- Zuständen
+- einem Eingabealphabet
+- Übergängen
+- einem Startzustand
+- Endzuständen
+
+Das Skript versucht, gleichwertige Zustände zu finden. Gleichwertig bedeutet hier:
+
+> Von diesen Zuständen aus verhält sich der Automat für alle möglichen Eingaben gleich.
+
+Solche Zustände können zusammengefasst werden, ohne dass sich die erkannte Sprache ändert.
+
+---
+
+## Eingabe des Automaten
+
+Der Automat wird direkt im Code als JavaScript-Objekt definiert:
+
+```js
+let automat = {
+    q100: { a: "q100", b: "q100" }
+};
+```
+
+In diesem Beispiel gibt es nur einen Zustand: `q100`.
+
+Für den Zustand `q100` gilt:
+
+- bei Eingabe `a` bleibt der Automat in `q100`
+- bei Eingabe `b` bleibt der Automat ebenfalls in `q100`
+
+Der Automat hat also eine Schleife auf sich selbst für beide Zeichen.
+
+---
+
+## Eingabealphabet
+
+Das Alphabet steht in dieser Zeile:
+
+```js
+let eingabeAlphabet = "ab".split("");
+```
+
+Dadurch entsteht dieses Array:
+
+```js
+["a", "b"]
+```
+
+Das Programm prüft also für jeden Zustand die Übergänge mit `a` und `b`.
+
+Wenn man ein anderes Alphabet verwenden möchte, muss man diese Zeile anpassen.
+
+Beispiel:
+
+```js
+let eingabeAlphabet = "abc".split("");
+```
+
+Dann müsste aber auch jeder Zustand Übergänge für `a`, `b` und `c` besitzen.
+
+---
+
+## Startzustand und Endzustände
+
+Der Startzustand wird hier festgelegt:
+
+```js
+let startZustand = "q100";
+```
+
+Die Endzustände stehen in diesem Array:
+
+```js
+let endzustaende = ["q100"];
+```
+
+In diesem Beispiel ist `q100` gleichzeitig Startzustand und Endzustand.
+
+Da `q100` bei jeder Eingabe wieder zu sich selbst zurückgeht, akzeptiert dieser Automat jedes Wort über dem Alphabet `{a, b}`.
+
+Also zum Beispiel:
+
+```text
+ε
+a
+b
+ab
+aaa
+babba
+```
+
+---
+
+## Die Variable `safe`
+
+Die Variable `safe` speichert die aktuellen Gruppen von Zuständen:
+
+```js
+let safe = {};
+```
+
+Während der Minimierung werden Zustände in Gruppen eingeteilt.
+
+Am Anfang gibt es höchstens zwei Gruppen:
+
+- Endzustände
+- Nicht-Endzustände
+
+Danach werden diese Gruppen immer weiter aufgeteilt, falls sich Zustände innerhalb einer Gruppe doch unterschiedlich verhalten.
+
+---
+
+## Funktion `getGroup(zustand)`
+
+```js
+function getGroup(zustand) {
+    for (let i in safe) {
+        if (safe[i].includes(zustand)) {
+            return i;
+        }
+    }
+    return null;
+}
+```
+
+Diese Funktion sucht heraus, in welcher Gruppe ein Zustand gerade liegt.
+
+Beispiel:
+
+```js
+safe = {
+    E: ["q0", "q1"],
+    N: ["q2"]
+};
+```
+
+Dann würde gelten:
+
+```js
+getGroup("q0") // "E"
+getGroup("q2") // "N"
+```
+
+Die Funktion wird später gebraucht, um zu vergleichen, ob Zustände bei gleichen Eingaben in dieselben Gruppen führen.
+
+---
+
+## Funktion `createGroups()`
+
+```js
+function createGroups() {
+    let end = [];
+    let notEnd = [];
+
+    for (let i in automat) {
+        if (endzustaende.includes(i)) {
+            end.push(i);
+        } else {
+            notEnd.push(i);
+        }
+    }
+
+    safe = {};
+
+    if (notEnd.length > 0) {
+        safe["N"] = notEnd;
+    }
+
+    if (end.length > 0) {
+        safe["E"] = end;
+    }
+}
+```
+
+Diese Funktion erstellt die erste Einteilung der Zustände.
+
+Dabei werden alle Zustände in zwei Gruppen getrennt:
+
+- `E` für Endzustände
+- `N` für Nicht-Endzustände
+
+Diese erste Trennung ist wichtig, weil ein Endzustand und ein Nicht-Endzustand nie gleichwertig sein können.
+
+Ein Endzustand akzeptiert das bisher gelesene Wort. Ein Nicht-Endzustand tut das nicht.
+
+---
+
+## Funktion `checkChanges()`
+
+Diese Funktion ist der wichtigste Teil der Minimierung.
+
+```js
+function checkChanges() {
+    let newSafe = {};
+    let changes = false;
+
+    for (let i in safe) {
+        for (let x of safe[i]) {
+            let str = "";
+
+            for (let h of eingabeAlphabet) {
+                str += getGroup(automat[x][h]) + "|";
+            }
+
+            let key = i + ":" + str;
+
+            if (newSafe[key]) {
+                newSafe[key].push(x);
+            } else {
+                newSafe[key] = [x];
+            }
+        }
+    }
+
+    if (Object.keys(newSafe).length !== Object.keys(safe).length) {
+        changes = true;
+    }
+
+    return { newSafe, changes };
+}
+```
+
+Die Funktion schaut sich jede aktuelle Zustandsgruppe an.
+
+Für jeden Zustand wird geprüft:
+
+> In welche Gruppen führen seine Übergänge?
+
+Daraus wird ein Schlüssel gebaut.
+
+Beispiel:
+
+```text
+E:E|N|
+```
+
+Das würde bedeuten:
+
+- der Zustand ist aktuell in Gruppe `E`
+- bei der ersten Eingabe geht er in Gruppe `E`
+- bei der zweiten Eingabe geht er in Gruppe `N`
+
+Zustände mit demselben Schlüssel bleiben zusammen in einer Gruppe.
+
+Zustände mit unterschiedlichem Schlüssel werden getrennt.
+
+---
+
+## Wiederholung der Aufteilung
+
+Nach dem ersten Prüfen wird die Aufteilung so lange wiederholt, bis sich nichts mehr ändert:
+
+```js
+let result = checkChanges();
+
+while (result.changes) {
+    safe = result.newSafe;
+    result = checkChanges();
+}
+```
+
+Das ist nötig, weil eine neue Aufteilung weitere Unterschiede sichtbar machen kann.
+
+Sobald keine neuen Gruppen mehr entstehen, ist die Minimierung abgeschlossen.
+
+Dann enthält `safe` die endgültigen Gruppen der gleichwertigen Zustände.
+
+---
+
+## Funktion `createNewAutomat()`
+
+Nachdem die endgültigen Gruppen gefunden wurden, wird daraus ein neuer Automat gebaut.
+
+```js
+function createNewAutomat() {
+    let newAutomat = {};
+
+    function groupName(gruppe) {
+        return "{" + gruppe.join(",") + "}";
+    }
+
+    for (let i in safe) {
+        let gruppe = safe[i];
+        let name = groupName(gruppe);
+
+        newAutomat[name] = {};
+
+        let vertreter = gruppe[0];
+
+        for (let h of eingabeAlphabet) {
+            let zielzustand = automat[vertreter][h];
+            let zielgruppeKey = getGroup(zielzustand);
+            let zielgruppe = safe[zielgruppeKey];
+
+            newAutomat[name][h] = groupName(zielgruppe);
+        }
+    }
+
+    return newAutomat;
+}
+```
+
+Jede Gruppe wird zu einem neuen Zustand.
+
+Wenn zum Beispiel die Zustände `q1` und `q2` zusammengelegt werden, bekommt der neue Zustand diesen Namen:
+
+```text
+{q1,q2}
+```
+
+Für die Übergänge reicht es, einen Vertreter aus der Gruppe zu nehmen:
+
+```js
+let vertreter = gruppe[0];
+```
+
+Das funktioniert, weil alle Zustände in derselben Gruppe gleichwertig sind. Sie haben also dasselbe Verhalten bezogen auf die Gruppen.
+
+---
+
+## Funktion `createHashTable()`
+
+Diese Funktion baut aus dem minimierten Automaten eine kompakte Textdarstellung.
+
+Dabei bekommen die neuen Zustände Nummern:
+
+```js
+decode[i] = idx++;
+```
+
+Der Startzustand bekommt zuerst eine Nummer. Danach werden alle erreichbaren Folgezustände nummeriert.
+
+Ein Eintrag sieht ungefähr so aus:
+
+```text
+0:a_0:b_0;
+```
+
+Das bedeutet:
+
+- Zustand `0`
+- bei Eingabe `a` geht es zu Zustand `0`
+- bei Eingabe `b` geht es zu Zustand `0`
+
+Für den Beispielautomaten entsteht genau so eine Struktur, weil der einzige Zustand bei `a` und `b` auf sich selbst zeigt.
+
+---
+
+## Ausgaben des Programms
+
+Die Funktion gibt drei Dinge in der Konsole aus:
+
+```js
+console.log("Minimierter Automat:");
+console.log(neu);
+
+console.log("Decode-Tabelle:");
+console.log(decode);
+
+console.log("HashTable:");
+console.log(table);
+```
+
+### 1. Minimierter Automat
+
+Hier sieht man den neu erzeugten Automaten nach der Minimierung.
+
+Beim Beispiel bleibt nur ein Zustand übrig:
+
+```js
+{
+  "{q100}": {
+    a: "{q100}",
+    b: "{q100}"
+  }
+}
+```
+
+### 2. Decode-Tabelle
+
+Die Decode-Tabelle zeigt, welche Zustandsgruppe welche Nummer bekommen hat.
+
+Beispiel:
+
+```js
+{
+  "{q100}": 0
+}
+```
+
+### 3. HashTable
+
+Die HashTable ist die kompakte Textform des Automaten.
+
+Beim Beispiel:
+
+```text
+0:a_0:b_0;
+```
+
+---
+
+## Funktion `simpleHash(str)`
+
+Zum Schluss wird die erzeugte HashTable gehasht:
+
+```js
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str.charCodeAt(i);
+    hash = hash * 31 + charCode;
+    hash = hash | 0;
+  }
+  return hash;
+}
+```
+
+Die Funktion geht Zeichen für Zeichen durch den String.
+
+Für jedes Zeichen wird der Hash-Wert neu berechnet:
+
+```js
+hash = hash * 31 + charCode;
+```
+
+Danach sorgt
+
+```js
+hash = hash | 0;
+```
+
+dafür, dass der Wert wie eine 32-Bit-Ganzzahl behandelt wird.
+
+Am Ende wird eine Zahl zurückgegeben.
+
+Diese Zahl kann man als einfachen Fingerabdruck des minimierten Automaten sehen.
+
+---
+
+## Ablauf des Programms
+
+Der Ablauf ist insgesamt:
+
+1. Automat, Alphabet, Startzustand und Endzustände werden definiert.
+2. Die Zustände werden zuerst in Endzustände und Nicht-Endzustände aufgeteilt.
+3. Die Gruppen werden so lange verfeinert, bis keine neue Aufteilung mehr entsteht.
+4. Aus den fertigen Gruppen wird der minimierte Automat gebaut.
+5. Der minimierte Automat wird in eine kompakte Textform gebracht.
+6. Diese Textform wird gehasht.
+7. Der Hash-Wert wird ausgegeben.
+
+---
+
+## Beispiel mit dem vorhandenen Automaten
+
+Der eingebaute Automat ist:
+
+```js
+let automat = {
+    q100: { a: "q100", b: "q100" }
+};
+```
+
+Er hat nur einen Zustand.
+
+Dieser Zustand ist auch ein Endzustand:
+
+```js
+let endzustaende = ["q100"];
+```
+
+Deshalb kann hier nichts weiter minimiert werden.
+
+Der minimierte Automat ist praktisch derselbe Automat, nur als Gruppe geschrieben:
+
+```js
+{
+  "{q100}": {
+    a: "{q100}",
+    b: "{q100}"
+  }
+}
+```
+
+Die HashTable lautet:
+
+```text
+0:a_0:b_0;
+```
+
+Danach wird daraus ein Hash-Wert berechnet und in der Konsole ausgegeben.
+
+---
+
+## Hinweis
+
+Das Programm erwartet einen vollständigen DEA.
+
+Das heißt:
+
+- Jeder Zustand muss für jedes Zeichen aus dem Alphabet einen Übergang haben.
+- Jeder Zielzustand muss auch im Automaten definiert sein.
+- Der Startzustand muss existieren.
+- Die Endzustände müssen gültige Zustände des Automaten sein.
+
+Wenn einer dieser Punkte fehlt, kann das Programm falsche Ergebnisse liefern oder abbrechen.
+
+
+
+
+
+
 # Eindeutigkeit minimaler DEAs
 
 ## Aussage
