@@ -11,7 +11,6 @@ Diese README dient als Übersicht.
 
 ## Übersicht der Programme
 
-> Die Programmnamen können hier später eingetragen oder angepasst werden.
 
 - [DEA-Verkleinerungsprogramm](#dea-verkleinerungsprogramm)
 - [Beweis der Eindeutigkeit der Minimierung](#Beweis-der-Eindeutigkeit-der-Minimierung)
